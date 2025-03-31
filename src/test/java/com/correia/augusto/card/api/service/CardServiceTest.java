@@ -6,6 +6,7 @@ import com.correia.augusto.card.api.enums.CardType;
 import com.correia.augusto.card.api.exception.*;
 import com.correia.augusto.card.api.repository.*;
 import com.correia.augusto.card.api.util.EncryptionUtil;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -48,8 +49,7 @@ class CardServiceTest {
                 CardType.CREDIT
         );
 
-        User user = new User();
-        user.setUsername("testUser");
+        User user = getUser();
 
         when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
         when(encryptionUtil.encrypt("1234567890123456")).thenReturn("encryptedNumber");
@@ -86,8 +86,7 @@ class CardServiceTest {
                 CardType.CREDIT
         );
 
-        User user = new User();
-        user.setUsername("testUser");
+        User user = getUser();
 
         when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
         when(encryptionUtil.encrypt("1234567890123456")).thenReturn("encryptedNumber");
@@ -107,8 +106,7 @@ class CardServiceTest {
                 CardType.CREDIT
         );
 
-        User user = new User();
-        user.setUsername("testUser");
+        User user = getUser();
 
         when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
 
@@ -126,8 +124,7 @@ class CardServiceTest {
                 CardType.CREDIT
         );
 
-        User user = new User();
-        user.setUsername("testUser");
+        User user = getUser();
 
         when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
 
@@ -167,10 +164,7 @@ class CardServiceTest {
 
     @Test
     void getCardById_ShouldReturnCard() {
-        Card card = new Card();
-        card.setId("1");
-        card.setNumber("encrypted");
-        card.setHolderName("Test User");
+        Card card = getCard();
 
         when(cardRepository.findById("1")).thenReturn(Optional.of(card));
         when(encryptionUtil.decrypt("encrypted")).thenReturn("123456******7890");
@@ -182,6 +176,8 @@ class CardServiceTest {
         assertEquals("Test User", result.holderName());
     }
 
+
+
     @Test
     void getCardById_ShouldThrowWhenNotFound() {
         when(cardRepository.findById("1")).thenReturn(Optional.empty());
@@ -192,8 +188,7 @@ class CardServiceTest {
 
     @Test
     void processCardFile_ShouldProcessValidFile() throws IOException {
-        User user = new User();
-        user.setUsername("testUser");
+        User user = getUser();
 
         when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
         when(encryptionUtil.encrypt(anyString())).thenReturn("encrypted");
@@ -212,8 +207,7 @@ class CardServiceTest {
 
     @Test
     void processCardFile_ShouldSkipDuplicateCards() throws IOException {
-        User user = new User();
-        user.setUsername("testUser");
+        User user = getUser();
 
         when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
         when(encryptionUtil.encrypt(anyString())).thenReturn("encrypted");
@@ -245,4 +239,53 @@ class CardServiceTest {
         assertThrows(ResourceNotFoundException.class,
                 () -> cardService.processCardFile(invalidContent, "testUser"));
     }
+
+    @Test
+    void findByCardNumber_ShouldReturnCard_WhenValid() {
+        String cardNumber = "4111111111111111";
+        String encrypted = "encrypted-123";
+        User user = getUser();
+        Card card = getCard();
+
+        when(encryptionUtil.encrypt(cardNumber)).thenReturn(encrypted);
+        when(encryptionUtil.decrypt(anyString())).thenReturn(cardNumber);
+        when(userRepository.findByUsername("user1")).thenReturn(Optional.of(user));
+        when(cardRepository.findByEncryptedNumber(encrypted)).thenReturn(Optional.of(card));
+
+        CardResponse response = cardService.findByCardNumber(cardNumber, "user1");
+
+        assertNotNull(response);
+        verify(encryptionUtil).encrypt(cardNumber);
+    }
+
+    @Test
+    void findByCardNumber_ShouldThrow_WhenWrongUser() {
+        User requester = new User();
+        Card card = getCard();
+
+        when(encryptionUtil.encrypt(any())).thenReturn("encrypted");
+        when(userRepository.findByUsername("requester")).thenReturn(Optional.of(requester));
+        when(cardRepository.findByEncryptedNumber(any())).thenReturn(Optional.of(card));
+
+        assertThrows(AuthenticationFailedException.class,
+                () -> cardService.findByCardNumber("4111111111111111", "requester"));
+    }
+
+    private static @NotNull Card getCard() {
+        Card card = new Card();
+        card.setId("1");
+        card.setNumber("encripted");
+        card.setHolderName("Test User");
+        card.setUser(getUser());
+        return card;
+    }
+
+
+    private static @NotNull User getUser() {
+        User user = new User();
+        user.setUsername("testUser");
+        user.setId(1L);
+        return user;
+    }
+
 }

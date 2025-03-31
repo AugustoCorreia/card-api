@@ -54,26 +54,20 @@ import static org.junit.jupiter.api.Assertions.*;
 
     @Test
      void testRegisterCard() {
-        // Arrange
         when(userDetails.getUsername()).thenReturn("user123");
 
-        // Act
         ResponseEntity<Void> response = cardController.registerCard(cardRequest, userDetails);
 
-        // Assert
         verify(cardService).registerCard(cardRequest, "user123");
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
     }
 
     @Test
      void testGetCardsByUser() {
-        // Arrange
         when(cardService.getCardsByUserId(1L)).thenReturn(Collections.singletonList(cardResponse));
 
-        // Act
         ResponseEntity<List<CardResponse>> response = cardController.getCardsByUser(1L);
 
-        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertFalse(response.getBody().isEmpty());
@@ -82,13 +76,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
     @Test
      void testGetCardById() {
-        // Arrange
         when(cardService.getCardById("cardId")).thenReturn(cardResponse);
 
-        // Act
         ResponseEntity<CardResponse> response = cardController.getCardById("cardId");
 
-        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("cardId", response.getBody().id());
@@ -96,7 +87,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
     @Test
      void testUploadArquivoCartoes() throws IOException {
-        // Arrange
         byte[] fileBytes = "test file".getBytes();
         when(file.getBytes()).thenReturn(fileBytes);
         when(userDetails.getUsername()).thenReturn("user123");
@@ -104,10 +94,8 @@ import static org.junit.jupiter.api.Assertions.*;
         ProcessamentoResult processamentoResult = new ProcessamentoResult(5, 10, "batch1"); // Exemplo de resultado
         when(cardService.processCardFile(fileBytes, "user123")).thenReturn(processamentoResult);
 
-        // Act
         ResponseEntity<ProcessamentoResult> response = cardController.uploadArquivoCartoes(file, userDetails);
 
-        // Assert
         verify(cardService).processCardFile(fileBytes, "user123");
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -118,26 +106,44 @@ import static org.junit.jupiter.api.Assertions.*;
 
     @Test
      void testUploadArquivoCartoes_FileEmpty() throws IOException {
-        // Arrange
         when(file.isEmpty()).thenReturn(true);
 
-        // Act
         ResponseEntity<ProcessamentoResult> response = cardController.uploadArquivoCartoes(file, userDetails);
 
-        // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
     @Test
      void testRegisterCard_UserServiceThrowsException() {
-        // Arrange
         when(userDetails.getUsername()).thenReturn("user123");
         doThrow(new RuntimeException("Service exception")).when(cardService).registerCard(any(), anyString());
 
-        // Act
         RuntimeException exception = assertThrows(RuntimeException.class, () -> cardController.registerCard(cardRequest, userDetails));
 
-        // Assert
         assertEquals("Service exception", exception.getMessage());
     }
+
+   @Test
+   void test_returns_card_response_for_valid_card_number() {
+      String validCardNumber = "4111111111111111";
+      String username = "testuser";
+
+      CardResponse expectedResponse = new CardResponse(
+              "card-id-123",
+              "4111************11",
+              "Test User",
+              LocalDate.of(2025, 12, 31),
+              CardType.CREDIT,
+              Instant.now()
+      );
+
+      when(userDetails.getUsername()).thenReturn(username);
+      when(cardService.findByCardNumber(validCardNumber, username)).thenReturn(expectedResponse);
+
+      ResponseEntity<CardResponse> response = cardController.getCardByNumber(validCardNumber, userDetails);
+
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      assertEquals(expectedResponse, response.getBody());
+      verify(cardService).findByCardNumber(validCardNumber, username);
+   }
 }

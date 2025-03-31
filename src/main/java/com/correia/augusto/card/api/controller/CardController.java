@@ -66,4 +66,13 @@ public class CardController {
         ProcessamentoResult resultant = cardService.processCardFile(file.getBytes(), userDetails.getUsername());
         return ResponseEntity.ok(resultant);
     }
+
+    @GetMapping("/by-number")
+    public ResponseEntity<CardResponse> getCardByNumber(
+            @RequestParam String number,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        CardResponse response = cardService.findByCardNumber(number, userDetails.getUsername());
+        return ResponseEntity.ok(response);
+    }
 }

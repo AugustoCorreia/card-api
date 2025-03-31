@@ -6,6 +6,7 @@ import com.correia.augusto.card.api.dto.ProcessamentoResult;
 import com.correia.augusto.card.api.entities.Card;
 import com.correia.augusto.card.api.entities.User;
 import com.correia.augusto.card.api.enums.CardType;
+import com.correia.augusto.card.api.exception.AuthenticationFailedException;
 import com.correia.augusto.card.api.exception.DuplicateDataException;
 import com.correia.augusto.card.api.exception.InvalidCardDataException;
 import com.correia.augusto.card.api.exception.ResourceNotFoundException;
@@ -31,6 +32,7 @@ import java.util.List;
 @Slf4j
 public class CardService {
 
+    public static final String USUARIO = "Usuário";
     private final CardRepository cardRepository;
     private final UserRepository userRepository;
     private final EncryptionUtil encryptionUtil;
@@ -38,7 +40,7 @@ public class CardService {
 
     public void registerCard(CardRequest request, String userName) {
         User user = userRepository.findByUsername(userName)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário", userName));
+                .orElseThrow(() -> new ResourceNotFoundException(USUARIO, userName));
 
         if (cardRepository.existsByNumber(encryptionUtil.encrypt(request.number()))) {
             throw new DuplicateDataException("Cartão já cadastrado para este usuário");
@@ -101,7 +103,7 @@ public class CardService {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(conteudoArquivo)))) {
 
             User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("Usuário", username));
+                    .orElseThrow(() -> new ResourceNotFoundException(USUARIO, username));
 
             String header = reader.readLine();
             String nome = header.substring(0, 29).trim();
@@ -156,6 +158,30 @@ public class CardService {
 
             return new ProcessamentoResult(cartoesProcessados, linhasLidas, lote);
         }
+    }
+
+    public CardResponse findByCardNumber(String cardNumber, String username) {
+        log.info("Busca por cartão iniciada - Usuário: {}", username);
+
+        if (!cardNumber.matches("^\\d{13,19}$")) {
+            throw new InvalidCardDataException("Número de cartão inválido");
+        }
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException(USUARIO, username));
+
+        String encryptedNumber = encryptionUtil.encrypt(cardNumber);
+
+        Card card = cardRepository.findByEncryptedNumber(encryptedNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Cartão" , encryptedNumber));
+
+        if (!card.getUser().getId().equals(user.getId())) {
+            throw new AuthenticationFailedException("Cartão não pertence ao usuário");
+        }
+
+        log.debug("Cartão encontrado: {}", card.getId());
+
+        return toResponse(card);
     }
 
     private String maskCardNumber(String number) {
