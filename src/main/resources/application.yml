@@ -1,0 +1,15 @@
+logging:
+  level:
+    org.springframework: INFO
+    com.example.cardapi: DEBUG
+
+application:
+  security:
+    jwt:
+      secret-key: ${SECRET_KEY:c2VjdXJlS2V5Rm9ySlNXVG9rZW5HZW5lcmF0aW9uMTIzNDU2}
+      expiration: 86400000
+      refresh-token:
+        expiration: 604800000
+encryption:
+  secret-key: ${ENCRYPTION_SECRET_KEY:cF3bG9KjV5vY7x$A%D*G-JaNdRgUkXp2s5u8y/A?D(G+KbPeShVmYq3t6w9z$C&E)ewfwesd}
+  salt: ${ENCRYPTION_SALT:salt)}

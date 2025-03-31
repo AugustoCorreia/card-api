@@ -1,0 +1,11 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+  server:
+    port: 8080
+  datasource:
+    url: jdbc:mysql://mysql:3306/card_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+    username: carduser
+    password: cardpass
+    driver-class-name: com.mysql.cj.jdbc.Driver
