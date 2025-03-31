@@ -39,7 +39,8 @@ API robusta para gerenciamento seguro de cartões de crédito/débito com:
 1. **Pré-requisitos**:
     - JDK 17
     - Maven 3.8+
-    - Docker 
+    - Docker (instale a partir de [Docker](https://docs.docker.com/get-docker/))
+    - Docker Compose (instale a partir de [Docker Compose](https://docs.docker.com/compose/install/))
 
 2. **Clone o projeto**:
    ```bash
